@@ -14,7 +14,7 @@ RUN usermod -aG root ${USER}
 RUN usermod -aG sudo ${USER}
 RUN echo "${USER}:password" | chpasswd
 
-RUN git clone http://github.com/egrissino/photoc.git /tmp/photoc && cd /tmp/photoc && git switch lcos-support && ./native-setup.sh && ./build.sh
+RUN git clone http://github.com/egrissino/photoc.git /tmp/photoc && cd /tmp/photoc && ./native-setup.sh && ./build.sh
 
 RUN cp /tmp/photoc/build/src/apps/photoc/photoc /usr/local/bin/
 RUN cp /tmp/photoc/build/src/apps/photoc-cli/photoc-cli /usr/local/bin/
