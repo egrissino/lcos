@@ -1,0 +1,67 @@
+# Builds the lcos base image from the LCOS ISO (setup.sh), then the lcos-dev image on top of it.
+# Tags v* also push lcos-dev to ghcr.io.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The ISO, its unpacked root filesystem and the two images need ~10 GB; the runner's
+      # preinstalled SDKs take most of the disk
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Install squashfs-tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends squashfs-tools
+
+      - name: Build lcos image
+        run: |
+          bash setup.sh
+          sudo umount rootfs
+          sudo rm -rf rootfs unsquashfs lcos-08.iso
+          docker image inspect lcos:latest --format 'lcos:latest {{.Size}} bytes'
+
+      - name: Build lcos-dev image
+        run: |
+          docker build \
+            --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            -t lcos-dev:latest .
+
+      # PhotoC was built inside the image; fail if it is missing a library
+      - name: Smoke test
+        run: |
+          docker run --rm lcos-dev:latest photoc-cli --help
+          ! docker run --rm lcos-dev:latest ldd /usr/local/bin/photoc | grep "not found"
+
+      - name: Log in to ghcr.io
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push lcos-dev
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/lcos-dev
+          for tag in "${{ github.ref_name }}" latest; do
+            docker tag lcos-dev:latest "$IMAGE:$tag"
+            docker push "$IMAGE:$tag"
+          done
