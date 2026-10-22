@@ -3,7 +3,7 @@ FROM lcos:latest
 ARG USER=guest
 
 RUN apt update --no-install-recommends -y
-RUN apt install systemctl net-tools openssh-server x11vnc xvfb xauth git
+RUN apt install systemctl net-tools openssh-server x11vnc xvfb xauth git zenity
 
 RUN mkdir -p /run/sshd
 RUN systemctl enable ssh
