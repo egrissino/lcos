@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMAGE=lcos-dev:latest
+IMAGE=ghcr.io/egrissino/lcos-dev:latest
 CONTAINER=lcos-dev
 
 if [ ! -z $(docker ps -q -f name=$CONTAINER) ]; then
