@@ -1,0 +1,4 @@
+.iso
+apps/
+rootfs/
+unsquashfs/
